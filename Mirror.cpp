@@ -67,6 +67,18 @@ EM_comp_t rotation_field(double phi, EM_comp_t field) {
 	return field_new;
 }
 
+struct params_set_int {
+	double t;
+	double R;
+	cfg_t cfg;
+	coords vector;
+	EM_t(*in_field)(cfg_t, coords);
+	EM_comp_t(*field)(double, cfg_t, coords, coords, EM_t(*)(cfg_t, coords));
+	EM_comp_t(*make_envelope)(double, EM_comp_t, cfg_t);
+
+};
+
+
 // Расчет интерграла методом Симпсона
 
 EM_comp_t sum(double start, double step, int first, int end, EM_comp_t(*funct)(double, void*), void* param) {
@@ -113,19 +125,6 @@ EM_comp_t simpson(double a, double b, EM_comp_t(*funct)(double, void*), void* pa
 
 	return result;
 }
-
-//Задание параметров падающего лазерного импульса
-
-struct params_set_int {
-	double t;
-	double R;
-	cfg_t cfg;
-	coords vector;
-	EM_t(*in_field)(cfg_t, coords);
-	EM_comp_t(*field)(double, cfg_t, coords, coords, EM_t(*)(cfg_t, coords));
-	EM_comp_t(*make_envelope)(double, EM_comp_t, cfg_t);
-
-};
 
 EM_comp_t Int(double psi, void* p) {
 	struct params_set_int* params = (struct params_set_int*)p;
@@ -270,61 +269,23 @@ int main() {
 	//cout << cfg.tau_FWHM;
 	ofstream fout1;
 	ofstream fout2;
-	// PIC test
-	//fout1.open(R"(C:\Users\Ìàêñèì\python\Mirror_sp_distribution_f=1_tau=7.5_angle=90_pic_im.txt)");
-	//coords vector_E, vector1_E, vector_B, vector1_B;
-	//EM_comp_t Refl_field_E, Refl_field_B;
-	//steps = 20;
-	//t = -75;
-	//vector_E.x = 0;
-	//vector_E.y = 0;
-	//vector_E.z = 0;
-	//vector_B.x = 0;
-	//vector_B.y = 0;
-	//vector_B.z = 0;
-	//scale = 3;
-	//for (int j = 0; j < 2 * steps; j++) {
-	//	vector_E.x = (j - steps) * 3;// 40/15.0;
-	//	vector_B.x = (j - steps) * 3 ;//40/15.0;
-	//	for (int i = 0; i < 2 * steps; i++) {
-	//		vector_E.y = (i - steps) * 3;//40 / 15.0;
-	//		vector_B.y = (i - steps) * 3;// 40 / 15.0;
-	//		for (int k = 0; k < 2 * 4 *steps; k++) {
-	//			vector_E.z = t + (k - 4 * steps) * 1.8/4.0;//6.0 / 21.0;
-	//			vector_B.z = t + 2 * M_PI / 80.0 + (k - 4 * steps) * 1.8/4.0;// 6.0 / 21.0;
-	//			vector1_E = rotation_vector(cfg.phi, vector_E);
-	//			vector1_B = rotation_vector(cfg.phi, vector_B);
-	//			Refl_field_E = calculation_by_another_method(t, cfg, vector1_E, Func_Field, Func_Envelope, *Reflected_field_der);
-	//			Refl_field_B = calculation_by_another_method(t + 2 * M_PI / 80.0, cfg, vector1_B, Func_Field, Func_Envelope, *Reflected_field_der);
-	//			//Refl_field_E = calculation_by_another_method(t, cfg, vector_E, Func_Field, no_envelope, *Reflected_field_der);
-	//			//Refl_field_B = calculation_by_another_method(t + 2 * M_PI / 80.0, cfg, vector_B, Func_Field, no_envelope, *Reflected_field_der);
-	//			Refl_field_E = rotation_field(cfg.phi, Refl_field_E);
-	//			Refl_field_B = rotation_field(cfg.phi, Refl_field_B);
-	//			fout1 << vector_E.x << " " << vector_E.y << " " << vector_E.z << " " << Refl_field_E.Im_Ex << " " << Refl_field_E.Im_Ey << " " <<
-	//				Refl_field_E.Im_Ez <<" "<< Refl_field_B.Im_Hx << " " << Refl_field_B.Im_Hy << " " << Refl_field_B.Im_Hz << endl;
-	//		}
-	//	}
-	//}
 
 
 	// Расчет ЭМ полей в плоскости XOZ  
 
 	fout1.open(R"(C:\Users\Ìàêñèì\python\Mirror_sp_distribution_f=1_tau=7.5_angle=90_res.txt)");
-	//fout2.open(R"(C:\Users\Ìàêñèì\python\Mirror_sp_distribution_ne_f=1_tau=7.5_angle=0_res.txt)");
-	//for (t = -steps * (d - len); t <= steps*(d- len); t += steps*(d- len)/2.0) {
-	//t = 0;// -steps * (d - len) / 2.0;
-	//len = 1.25;
+
 	for (t = -75; t <= 75; t += 75) {
-	//for (t = -steps/5.0 * (d - len); t <= steps/5.0 * (d - len); t += steps * (d - len) / 10.0){
+
 		vector.x = 0;
 		vector.y = 0;
 		vector.z = 0;
 		for (int j = 0; j < 2 * steps; j++) {
 			
-			vector.x = (- 7.5 + j * 15 / (2.0 * steps)) * 2 * M_PI;//(j - steps) *7/50.0;	
+			vector.x = (- 7.5 + j * 15 / (2.0 * steps)) * 2 * M_PI;
 
 			for (int k = 0; k < 2 * steps; k++) {
-				//vector.z = t + (k - steps) * 7/50.0;
+
 
 				if (t == -75) {
 					vector.z = (-17.0 + k * 9.5 / (2.0 * steps)) * 2 * M_PI;
@@ -338,15 +299,13 @@ int main() {
 
 				vector1 = rotation_vector(cfg.phi + cfg.psi, vector);
 				Refl_field = calculation_by_another_method( t, cfg, vector1, Func_Field, Func_Envelope, *Reflected_field_der);
-				//Refl_field_old = calculation_by_another_method( t, cfg, vector1, Func_Field, no_envelope, *Reflected_field);
+
 				Refl_field = rotation_field(cfg.phi + cfg.psi, Refl_field);
-				//Refl_field_old = rotation_field(cfg.phi, Refl_field_old);
+
 				fout1 << vector.x << " " << vector.z << " " << pow(Refl_field.Re_Ex, 2) + pow(Refl_field.Im_Ex, 2) << " " << pow(Refl_field.Re_Ey, 2) + pow(Refl_field.Im_Ey, 2)
 					<< " " << pow(Refl_field.Re_Ez, 2) + pow(Refl_field.Im_Ez, 2) << " " << pow(Refl_field.Re_Hx, 2) + pow(Refl_field.Im_Hx, 2) << " " <<
 					pow(Refl_field.Re_Hy, 2) + pow(Refl_field.Im_Hy, 2) << " " << pow(Refl_field.Re_Hz, 2) + pow(Refl_field.Im_Hz, 2) << " " << Refl_field.Re_Ex << " " << Refl_field.Re_Ey << " " << Refl_field.Re_Ez << endl;
-				//fout2 << vector.x << " " << vector.z << " " << pow(Refl_field_old.Re_Ex, 2) + pow(Refl_field_old.Im_Ex, 2) << " " << pow(Refl_field_old.Re_Ey, 2) + pow(Refl_field_old.Im_Ey, 2)
-				//	<< " " << pow(Refl_field_old.Re_Ez, 2) + pow(Refl_field_old.Im_Ez, 2) << " " << pow(Refl_field_old.Re_Hx, 2) + pow(Refl_field_old.Im_Hx, 2) << " " <<
-				//	pow(Refl_field_old.Re_Hy, 2) + pow(Refl_field_old.Im_Hy, 2) << " " << pow(Refl_field_old.Re_Hz, 2) + pow(Refl_field_old.Im_Hz, 2) <<" " << Refl_field_old.Re_Ex << " " << Refl_field_old.Re_Ey << " " << Refl_field_old.Re_Ez << endl;
+				
 			}
 		}
 	}
