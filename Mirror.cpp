@@ -143,21 +143,8 @@ EM_comp_t Int(double psi, void* p) {
 	double tau = t + (in_vector.z - r_sq + 2 * cfg.f);
 
 	EM_comp_t func1 = params->field(t, cfg, in_vector, vector, params->in_field), func_r;
-
-	//for (int i = 0; i < 12; i++) {
-	//	if (i < 6) {
-	//		*(&(func_r.Re_Ex) + i) = *(&(func1.Re_Ex) + i + 6) * log(16) * tau / (cfg.tau_FWHM * cfg.tau_FWHM);
-	//	}
-	//	else {
-	//		*(&(func_r.Re_Ex) + i) = *(&(func1.Re_Ex) + i - 6) * log(16) * tau / (cfg.tau_FWHM * cfg.tau_FWHM);
-	//	}
-	//}
-	EM_comp_t func;// , func_no_der = params->make_envelope(tau, func1, cfg), func_der = params->make_envelope(tau, func_r, cfg);
-	//
-	//for (int i = 0; i < 12; i++) {
-	//	*(&(func.Re_Ex) + i) = *(&(func_no_der.Re_Ex) + i) + *(&(func_der.Re_Ex) + i);
-	//}
-	//cout << func.Re_Ex << " " << func_der.Re_Ex << endl;23
+	EM_comp_t func;
+	
 	func = params->make_envelope(tau, func1, cfg);
 	for (int i = 0; i < 12; i++) {
 		*(&(func.Re_Ex) + i) *= R;
@@ -197,59 +184,8 @@ EM_comp_t calculation_by_another_method(double t,
 	return result;
 }
 
-EM_comp_t calc_int(int N ,double t, cfg_t cfg,coords vector, EM_t(*in_field)(cfg_t, coords), EM_comp_t(*make_envelope)(double, EM_comp_t,cfg_t),
-	EM_comp_t(*field)(double, cfg_t, coords , coords , EM_t(*)(cfg_t, coords))) {
+// Задание подынтегрального выражения
 
-	coords in_vector;
-	double s , l=N;
-	double tau, r_sq;
-	EM_comp_t func, result;
-	result.Re_Ex = result.Re_Ey = result.Re_Ez = result.Re_Hx = result.Re_Hy = result.Re_Hz = 0;
-	result.Im_Ex = result.Im_Ey = result.Im_Ez = result.Im_Hx = result.Im_Hy = result.Im_Hz = 0;
-	
-	for (int i = 0; i <= N; i++) {
-		create(cfg, in_vector.x, in_vector.y);
-		s = (in_vector.x * in_vector.x + in_vector.y * in_vector.y) * 0.25 / (cfg.f * cfg.f);
-		in_vector.z = cfg.f * (s - 1) ;
-		r_sq = sqrt((in_vector.x - vector.x) * (in_vector.x - vector.x) + (in_vector.y - vector.y) * (in_vector.y - vector.y) + (in_vector.z - vector.z) * (in_vector.z - vector.z)) ;
-		tau = t + (in_vector.z - r_sq  + 2 * cfg.f) ;
-		if (pow((in_vector.x - cfg.h), 2) + in_vector.y * in_vector.y <= cfg.rad * cfg.rad) {
-			func = field(t, cfg, in_vector, vector, in_field);
-			result = make_envelope(tau, func, cfg);
-		}
-	}
-	for (int i = 0; i < 12; i++) {
-		*(&(result.Re_Ex) + i) *= 0.25 / (cfg.f * M_PI) * cfg.rad * cfg.rad / l;
-	}
-
-	return result;
-}
-EM_comp_t Reflected_field_der(double t, cfg_t cfg, coords in_vector, coords vector, EM_t(*in_field)(cfg_t, coords)) {
-	EM_comp_t field;
-	EM_t incident_field = in_field(cfg, in_vector);
-	double AE[3][3], AH[3][3];
-	double r_sq = sqrt((in_vector.x - vector.x) * (in_vector.x - vector.x) + (in_vector.y - vector.y) * (in_vector.y - vector.y) + (in_vector.z - vector.z) * (in_vector.z - vector.z));
-	double s = (in_vector.x * in_vector.x + in_vector.y * in_vector.y) * 0.25 / (cfg.f * cfg.f);
-	double l = t + (cfg.f * (s - 1) - r_sq + 2 * cfg.f);
-	in_vector.z = cfg.f * (s - 1);
-	matrixAE(cfg, in_vector, vector, AE);
-	matrixAH(cfg, in_vector, vector, AH);
-
-	field.Re_Ex = -incident_field.Ex * AE[0][0] * sin(l - atan(2 * l * log(4) / (cfg.tau_FWHM * cfg.tau_FWHM))) * sqrt(1 + 4 * log(4) * l * l / (pow(cfg.tau_FWHM, 4))) / (r_sq * r_sq);
-	field.Re_Ey = -incident_field.Ex * AE[1][0] * sin(l - atan(2 * l * log(4) / (cfg.tau_FWHM * cfg.tau_FWHM))) * sqrt(1 + 4 * log(4) * l * l / (pow(cfg.tau_FWHM, 4))) / (r_sq * r_sq);
-	field.Re_Ez = -incident_field.Ex * AE[2][0] * sin(l - atan(2 * l * log(4) / (cfg.tau_FWHM * cfg.tau_FWHM))) * sqrt(1 + 4 * log(4) * l * l / (pow(cfg.tau_FWHM, 4))) / (r_sq * r_sq);
-	field.Re_Hx = -incident_field.Ex * AH[0][0] * sin(l - atan(2 * l * log(4) / (cfg.tau_FWHM * cfg.tau_FWHM))) * sqrt(1 + 4 * log(4) * l * l / (pow(cfg.tau_FWHM, 4))) / (r_sq * r_sq);
-	field.Re_Hy = -incident_field.Ex * AH[1][0] * sin(l - atan(2 * l * log(4) / (cfg.tau_FWHM * cfg.tau_FWHM))) * sqrt(1 + 4 * log(4) * l * l / (pow(cfg.tau_FWHM, 4))) / (r_sq * r_sq);
-	field.Re_Hz = -incident_field.Ex * AH[2][0] * sin(l - atan(2 * l * log(4) / (cfg.tau_FWHM * cfg.tau_FWHM))) * sqrt(1 + 4 * log(4) * l * l / (pow(cfg.tau_FWHM, 4))) / (r_sq * r_sq);
-
-	field.Im_Ex = incident_field.Ex * AE[0][0] * cos(l - atan(2 * l * log(4) / (cfg.tau_FWHM * cfg.tau_FWHM))) * sqrt(1 + 4 * log(4) * l * l / (pow(cfg.tau_FWHM, 4))) / (r_sq * r_sq);
-	field.Im_Ey = incident_field.Ex * AE[1][0] * cos(l - atan(2 * l * log(4) / (cfg.tau_FWHM * cfg.tau_FWHM))) * sqrt(1 + 4 * log(4) * l * l / (pow(cfg.tau_FWHM, 4))) / (r_sq * r_sq);
-	field.Im_Ez = incident_field.Ex * AE[2][0] * cos(l - atan(2 * l * log(4) / (cfg.tau_FWHM * cfg.tau_FWHM))) * sqrt(1 + 4 * log(4) * l * l / (pow(cfg.tau_FWHM, 4))) / (r_sq * r_sq);
-	field.Im_Hx = incident_field.Ex * AH[0][0] * cos(l - atan(2 * l * log(4) / (cfg.tau_FWHM * cfg.tau_FWHM))) * sqrt(1 + 4 * log(4) * l * l / (pow(cfg.tau_FWHM, 4))) / (r_sq * r_sq);
-	field.Im_Hy = incident_field.Ex * AH[1][0] * cos(l - atan(2 * l * log(4) / (cfg.tau_FWHM * cfg.tau_FWHM))) * sqrt(1 + 4 * log(4) * l * l / (pow(cfg.tau_FWHM, 4))) / (r_sq * r_sq);
-	field.Im_Hz = incident_field.Ex * AH[2][0] * cos(l - atan(2 * l * log(4) / (cfg.tau_FWHM * cfg.tau_FWHM))) * sqrt(1 + 4 * log(4) * l * l / (pow(cfg.tau_FWHM, 4))) / (r_sq * r_sq);
-	return field;
-}
 EM_comp_t Reflected_field(double t, cfg_t cfg, coords in_vector, coords vector, EM_t(*in_field)(cfg_t, coords)) {
 	EM_comp_t field;
 	EM_t incident_field = in_field(cfg, in_vector);
@@ -276,6 +212,36 @@ EM_comp_t Reflected_field(double t, cfg_t cfg, coords in_vector, coords vector, 
 	field.Im_Hz =  incident_field.Ex * AH[2][0] * cos(l) / (r_sq * r_sq);
 	return field;
 }
+
+// Задание подынтегрального выражения с учетом поправки для ультракоротких импульсов
+
+EM_comp_t Reflected_field_der(double t, cfg_t cfg, coords in_vector, coords vector, EM_t(*in_field)(cfg_t, coords)) {
+	EM_comp_t field;
+	EM_t incident_field = in_field(cfg, in_vector);
+	double AE[3][3], AH[3][3];
+	double r_sq = sqrt((in_vector.x - vector.x) * (in_vector.x - vector.x) + (in_vector.y - vector.y) * (in_vector.y - vector.y) + (in_vector.z - vector.z) * (in_vector.z - vector.z));
+	double s = (in_vector.x * in_vector.x + in_vector.y * in_vector.y) * 0.25 / (cfg.f * cfg.f);
+	double l = t + (cfg.f * (s - 1) - r_sq + 2 * cfg.f);
+	in_vector.z = cfg.f * (s - 1);
+	matrixAE(cfg, in_vector, vector, AE);
+	matrixAH(cfg, in_vector, vector, AH);
+
+	field.Re_Ex = -incident_field.Ex * AE[0][0] * sin(l - atan(2 * l * log(4) / (cfg.tau_FWHM * cfg.tau_FWHM))) * sqrt(1 + 4 * log(4) * l * l / (pow(cfg.tau_FWHM, 4))) / (r_sq * r_sq);
+	field.Re_Ey = -incident_field.Ex * AE[1][0] * sin(l - atan(2 * l * log(4) / (cfg.tau_FWHM * cfg.tau_FWHM))) * sqrt(1 + 4 * log(4) * l * l / (pow(cfg.tau_FWHM, 4))) / (r_sq * r_sq);
+	field.Re_Ez = -incident_field.Ex * AE[2][0] * sin(l - atan(2 * l * log(4) / (cfg.tau_FWHM * cfg.tau_FWHM))) * sqrt(1 + 4 * log(4) * l * l / (pow(cfg.tau_FWHM, 4))) / (r_sq * r_sq);
+	field.Re_Hx = -incident_field.Ex * AH[0][0] * sin(l - atan(2 * l * log(4) / (cfg.tau_FWHM * cfg.tau_FWHM))) * sqrt(1 + 4 * log(4) * l * l / (pow(cfg.tau_FWHM, 4))) / (r_sq * r_sq);
+	field.Re_Hy = -incident_field.Ex * AH[1][0] * sin(l - atan(2 * l * log(4) / (cfg.tau_FWHM * cfg.tau_FWHM))) * sqrt(1 + 4 * log(4) * l * l / (pow(cfg.tau_FWHM, 4))) / (r_sq * r_sq);
+	field.Re_Hz = -incident_field.Ex * AH[2][0] * sin(l - atan(2 * l * log(4) / (cfg.tau_FWHM * cfg.tau_FWHM))) * sqrt(1 + 4 * log(4) * l * l / (pow(cfg.tau_FWHM, 4))) / (r_sq * r_sq);
+
+	field.Im_Ex = incident_field.Ex * AE[0][0] * cos(l - atan(2 * l * log(4) / (cfg.tau_FWHM * cfg.tau_FWHM))) * sqrt(1 + 4 * log(4) * l * l / (pow(cfg.tau_FWHM, 4))) / (r_sq * r_sq);
+	field.Im_Ey = incident_field.Ex * AE[1][0] * cos(l - atan(2 * l * log(4) / (cfg.tau_FWHM * cfg.tau_FWHM))) * sqrt(1 + 4 * log(4) * l * l / (pow(cfg.tau_FWHM, 4))) / (r_sq * r_sq);
+	field.Im_Ez = incident_field.Ex * AE[2][0] * cos(l - atan(2 * l * log(4) / (cfg.tau_FWHM * cfg.tau_FWHM))) * sqrt(1 + 4 * log(4) * l * l / (pow(cfg.tau_FWHM, 4))) / (r_sq * r_sq);
+	field.Im_Hx = incident_field.Ex * AH[0][0] * cos(l - atan(2 * l * log(4) / (cfg.tau_FWHM * cfg.tau_FWHM))) * sqrt(1 + 4 * log(4) * l * l / (pow(cfg.tau_FWHM, 4))) / (r_sq * r_sq);
+	field.Im_Hy = incident_field.Ex * AH[1][0] * cos(l - atan(2 * l * log(4) / (cfg.tau_FWHM * cfg.tau_FWHM))) * sqrt(1 + 4 * log(4) * l * l / (pow(cfg.tau_FWHM, 4))) / (r_sq * r_sq);
+	field.Im_Hz = incident_field.Ex * AH[2][0] * cos(l - atan(2 * l * log(4) / (cfg.tau_FWHM * cfg.tau_FWHM))) * sqrt(1 + 4 * log(4) * l * l / (pow(cfg.tau_FWHM, 4))) / (r_sq * r_sq);
+	return field;
+}
+
 
 using namespace std;
 int main() {
