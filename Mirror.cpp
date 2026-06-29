@@ -14,6 +14,8 @@
 # define STEPS  100
 using namespace std;
 
+// Введение матриц, явлющихся частьбю подинтегрального выражения и связанных с геометрией параболического зеркала
+
 void matrixAE(cfg_t cfg, coords in_vector, coords vector, double AE[3][3]) {
 	double r_sq = sqrt(pow((in_vector.x - vector.x), 2) + pow((in_vector.y - vector.y), 2) + pow((in_vector.z - vector.z), 2));
 	AE[0][0] = 2 * cfg.f * r_sq - in_vector.x * (in_vector.x - vector.x);
@@ -34,10 +36,8 @@ void matrixAH(cfg_t cfg, coords in_vector, coords vector, double AH[3][3]) {
 	AH[2][1] = 2 * cfg.f * (in_vector.x - vector.x);
 	AH[0][2] = AH[1][2] = AH[2][2] = 0;
 }
-double derivative(double t, double h, double(*nv)(double, double, cfg_t), cfg_t cfg) {
-	double d = (nv(t + h, 1.0, cfg) - nv(t-h, 1.0, cfg)) / (2.0 * h);
-	return d;
-}
+
+//Применение матрицы поворота для координат и электрических полей, необходимый для учета внеосевого угла зеркала
 
 coords rotation_vector(double phi, coords vector) {
 	coords vector_new;
@@ -67,11 +67,7 @@ EM_comp_t rotation_field(double phi, EM_comp_t field) {
 	return field_new;
 }
 
-void create(cfg_t cfg, double& x, double& y) {
-	x = (cfg.h + cfg.rad*(rand() * rand() % 100000 / 50000.0 - 1.0));
-	y = ((rand() * rand() % 100000 / 50000.0 - 1.0)*cfg.rad);
-
-}
+// Расчет интерграла методом Симпсона
 
 EM_comp_t sum(double start, double step, int first, int end, EM_comp_t(*funct)(double, void*), void* param) {
 	EM_comp_t result, res1;
@@ -117,6 +113,8 @@ EM_comp_t simpson(double a, double b, EM_comp_t(*funct)(double, void*), void* pa
 
 	return result;
 }
+
+//Задание параметров падающего лазерного импульса
 
 struct params_set_int {
 	double t;
@@ -217,22 +215,7 @@ EM_comp_t calc_int(int N ,double t, cfg_t cfg,coords vector, EM_t(*in_field)(cfg
 		tau = t + (in_vector.z - r_sq  + 2 * cfg.f) ;
 		if (pow((in_vector.x - cfg.h), 2) + in_vector.y * in_vector.y <= cfg.rad * cfg.rad) {
 			func = field(t, cfg, in_vector, vector, in_field);
-			//cout <<t<<" "<< in_vector.z - r_sq + 2 * cfg.f << endl;
 			result = make_envelope(tau, func, cfg);
-			//result.Re_Ex += make_envelope(tau, func.Re_Ex, cfg);// +func.Im_Ex * (-2.0 * (-2.0 * log(0.5)) * (tau / pow(cfg.tau_FWHM, 2)) * make_envelope(tau, 1, cfg));//derivative(tau, h * tau, make_envelope, cfg);
-			//result.Re_Ey += make_envelope(tau, func.Re_Ey, cfg);// +func.Im_Ey * (-2.0 * (-2.0 * log(0.5)) * (tau / pow(cfg.tau_FWHM, 2)) * make_envelope(tau, 1, cfg));//derivative(tau, h*tau, make_envelope, cfg);
-			//result.Re_Ez += make_envelope(tau, func.Re_Ez, cfg);// +func.Im_Ez * (-2.0 * (-2.0 * log(0.5)) * (tau / pow(cfg.tau_FWHM, 2)) * make_envelope(tau, 1, cfg));//derivative(tau, h*tau, make_envelope, cfg);
-			//result.Re_Hx += make_envelope(tau, func.Re_Hx, cfg);// +func.Im_Hx * (-2.0 * (-2.0 * log(0.5)) * (tau / pow(cfg.tau_FWHM, 2)) * make_envelope(tau, 1, cfg));//derivative(tau, h*tau, make_envelope, cfg);
-			//result.Re_Hx += make_envelope(tau, func.Re_Hy, cfg);// +func.Im_Hy * (-2.0 * (-2.0 * log(0.5)) * (tau / pow(cfg.tau_FWHM, 2)) * make_envelope(tau, 1, cfg));//derivative(tau, h*tau, make_envelope, cfg);
-			//result.Re_Hz += make_envelope(tau, func.Re_Hz, cfg);// +func.Im_Hz * (-2.0 * (-2.0 * log(0.5)) * (tau / pow(cfg.tau_FWHM, 2)) * make_envelope(tau, 1, cfg));//derivative(tau, h*tau, make_envelope, cfg);
-
-			////cout<< /*func.Re_Ex */ derivative(tau, h*tau, make_envelope, cfg) << " " << ( - 2.0 * (-2.0 * log(0.5)) * (tau / pow(cfg.tau_FWHM, 2)) * make_envelope(tau, 1, cfg)) << endl;
-			//result.Im_Ex += make_envelope(tau, func.Im_Ex, cfg);// +func.Re_Ex * (-2.0 * (-2.0 * log(0.5)) * (tau / pow(cfg.tau_FWHM, 2)) * make_envelope(tau, 1, cfg));//derivative(tau, h*tau, make_envelope, cfg);
-			//result.Im_Ey += make_envelope(tau, func.Im_Ey, cfg);// +func.Re_Ey * (-2.0 * (-2.0 * log(0.5)) * (tau / pow(cfg.tau_FWHM, 2)) * make_envelope(tau, 1, cfg));//derivative(tau, h*tau, make_envelope, cfg);
-			//result.Im_Ez += make_envelope(tau, func.Im_Ez, cfg);// +func.Re_Ez * (-2.0 * (-2.0 * log(0.5)) * (tau / pow(cfg.tau_FWHM, 2)) * make_envelope(tau, 1, cfg));//derivative(tau, h*tau, make_envelope, cfg);
-			//result.Im_Hx += make_envelope(tau, func.Im_Hx, cfg);// +func.Re_Hx * (-2.0 * (-2.0 * log(0.5)) * (tau / pow(cfg.tau_FWHM, 2)) * make_envelope(tau, 1, cfg));//derivative(tau, h*tau, make_envelope, cfg);
-			//result.Im_Hy += make_envelope(tau, func.Im_Hy, cfg);// +func.Re_Hy * (-2.0 * (-2.0 * log(0.5)) * (tau / pow(cfg.tau_FWHM, 2)) * make_envelope(tau, 1, cfg));//derivative(tau, h*tau, make_envelope, cfg);
-			//result.Im_Hz += make_envelope(tau, func.Im_Hz, cfg);// +func.Re_Hz * (-2.0 * (-2.0 * log(0.5)) * (tau / pow(cfg.tau_FWHM, 2)) * make_envelope(tau, 1, cfg));//derivative(tau, h*tau, make_envelope, cfg);
 		}
 	}
 	for (int i = 0; i < 12; i++) {
@@ -277,19 +260,6 @@ EM_comp_t Reflected_field(double t, cfg_t cfg, coords in_vector, coords vector, 
 	in_vector.z = cfg.f * (s - 1);
 	matrixAE(cfg, in_vector, vector, AE);
 	matrixAH(cfg, in_vector, vector, AH);
-	//field.Re_Ex = 1 / (4 * cfg.f* M_PI) * incident_field.Ex * (AE[0][0] * r_sq * sin(l)  + cos(l) * in_vector.x * (in_vector.x - vector.x)  ) / pow(r_sq, 3);
-	//field.Re_Ey = 1 / (4 * cfg.f * M_PI) * incident_field.Ex * AE[1][0] * (sin(l) * r_sq - cos(l)) / pow(r_sq, 3);
-	//field.Re_Ez = 1 / (4 * cfg.f * M_PI) * incident_field.Ex * (AE[2][0] * sin(l) * r_sq  + cos(l) * in_vector.x * (in_vector.z - vector.z)) / pow(r_sq, 3);
-	//field.Re_Hx = 1 / (4 * cfg.f * M_PI) * incident_field.Ex * AH[0][0] * (sin(l) * r_sq - cos(l)) / pow(r_sq, 3);
-	//field.Re_Hy = 1 / (4 * cfg.f * M_PI) * incident_field.Ex * AH[1][0] * (sin(l) * r_sq  - cos(l)) / pow(r_sq, 3);
-	//field.Re_Hz = 1 / (4 * cfg.f * M_PI) * incident_field.Ex * AH[2][0] * (sin(l) * r_sq  - cos(l)) / pow(r_sq, 3);
-
-	//field.Im_Ex = -1 / (4 * cfg.f * M_PI) * incident_field.Ex * (AE[0][0] * r_sq * cos(l)  - sin(l) * in_vector.x * (in_vector.x - vector.x)) / pow(r_sq, 3);
-	//field.Im_Ey = -1 / (4 * cfg.f * M_PI) * incident_field.Ex * AE[1][0] * (cos(l) * r_sq  + sin(l)) / pow(r_sq, 3);
-	//field.Im_Ez = -1 / (4 * cfg.f * M_PI) * incident_field.Ex * (AE[2][0] * cos(l) * r_sq - sin(l) * in_vector.x * (in_vector.z - vector.z)) / pow(r_sq, 3);
-	//field.Im_Hx = -1 / (4 * cfg.f * M_PI) * incident_field.Ex * AH[0][0] * (cos(l) * r_sq  + sin(l)) / pow(r_sq, 3);
-	//field.Im_Hy = -1 / (4 * cfg.f * M_PI) * incident_field.Ex * AH[1][0] * (cos(l) * r_sq  + sin(l)) / pow(r_sq, 3);
-	//field.Im_Hz = -1 / (4 * cfg.f * M_PI) * incident_field.Ex * AH[2][0] * (cos(l) * r_sq  + sin(l)) / pow(r_sq, 3);
 
 	field.Re_Ex = -incident_field.Ex * AE[0][0] * sin(l) / (r_sq * r_sq);
 	field.Re_Ey = -incident_field.Ex * AE[1][0] * sin(l) / (r_sq * r_sq);
